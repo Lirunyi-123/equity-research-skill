@@ -52,17 +52,20 @@ description: 上市公司基本面深度研究与估值分析。当用户给出�
 
 ### Step 0 标的确认
 - 只有公司名 → 检索确认代码与交易所；多家同名/近似 → 列候选请用户确认；无法确认则停止
-- 代码归属：6开头→沪市；688→科创板；0/3→深市；4/8→北交所；5位数字→港股；字母→美股（V1 以A股为主；美股/港股说明数据局限后可做简化版）
+- 代码归属：6开头→沪市；688→科创板；0/3→深市；4/8→北交所；5位数字→港股；字母→美股（内置自动脚本仅覆盖沪深A股；北交所/港股/美股按 references/data-sources.md「北交所与港美股 SOP」手动采集，说明数据局限后可做简化版）
 - A+H 两地上市：默认分析A股主体，附 H/A 折溢价；ST/*ST：正常分析，报告首屏显著标注
 - 完成判据：代码、名称、交易所、货币、现价与总市值已确认并记录
 
 ### Step 1 数据采集
-先读 **references/data-sources.md**（来源分级、采集清单、SOP、降级链），再开始采集。按序跑四件套：
+先读 **references/data-sources.md**（来源分级、采集清单、SOP、降级链、Provider 适配层），再开始采集。
+**Provider 优先**：若 `scripts/providers/active.py` 存在（用户自配的数据插件，接口约定见 `scripts/providers/provider_interface.md`），优先调用它取数，失败再走下列内置公开接口脚本。
+按序跑四件套：
 1. `python3 scripts/fetch_quote.py {code}` — 行情/PE/PB/市值快照
-2. `python3 scripts/collect_f10.py {SECUCODE} reports/{code}_raw.json` — 12年财务序列（如 `600519.SH`）
+2. `python3 scripts/collect_f10.py {SECUCODE} reports/{code}_raw.json` — 12年财务序列（如 `600519.SH`；输出已是亿元口径的 calc.py 就绪 JSON）
 3. `python3 scripts/pe_percentile.py {SECUCODE}` — PE/PB 历史分位
 4. `python3 scripts/f10_sections.py {CODE}` — 主营构成与十大股东（如 `SH600519`）
-搜索/子代理不可用时，其余定性条目按 data-sources.md 降级链直连采集（巨潮年报摘要PDF性价比最高：审计意见/股东质押/分红/季度拆分一次拿齐）。
+接口异常时先跑 `python3 scripts/selfcheck.py` 判断是哪个接口失效，接口 URL/字段集中维护在 `scripts/endpoints.py`。
+搜索/子代理不可用时，其余定性条目按 data-sources.md 降级链直连采集（巨潮年报摘要PDF性价比最高：审计意见/股东质押/分红/季度拆分一次拿齐）。北交所、港股、美股标的的采集路径见 data-sources.md「北交所与港美股 SOP」。
 完成判据：采集清单每项要么有 [n] 来源，要么明确标注"缺失"。
 
 ### Step 2 数据核验与落盘
@@ -147,11 +150,15 @@ description: 上市公司基本面深度研究与估值分析。当用户给出�
 
 | 脚本 | 用途 |
 |---|---|
-| scripts/fetch_quote.py | A股行情/PE/PB/市值快照（非官方公开接口，尽力而为，失败改走网页采集） |
-| scripts/collect_f10.py | 东财 datacenter 接口拉 12 年财务序列（利润表+资产负债表+现金流量表），输出 calc.py 输入格式：`python3 collect_f10.py 600519.SH out.json` |
-| scripts/pe_percentile.py | 拉日频 PE/PB 序列并计算历史分位（5年/全样本）：`python3 pe_percentile.py 600519.SH` |
-| scripts/f10_sections.py | 主营构成（产品/行业/地区拆分）+ 十大股东一键采集；内置巨潮公告两步定位函数 |
+| scripts/fetch_quote.py | A股行情/PE/PB/市值快照（非官方公开接口，尽力而为，失败改走网页采集）。默认人类可读摘要，`--json` 输出完整 JSON |
+| scripts/collect_f10.py | 东财 datacenter 接口拉 12 年财务序列（利润表+资产负债表+现金流量表），输出亿元口径的 calc.py 就绪 JSON（含 _meta 字段口径说明）：`python3 collect_f10.py 600519.SH out.json` |
+| scripts/pe_percentile.py | 拉日频 PE/PB 序列并计算历史分位（5年/全样本）：`python3 pe_percentile.py 600519.SH`（支持 `--json`） |
+| scripts/f10_sections.py | 主营构成（产品/行业/地区拆分）+ 十大股东一键采集（支持 `--json`）；内置巨潮公告两步定位函数 |
 | scripts/calc.py | 增长/CAGR/利润率/ROE/杜邦/FCF/偿债（输入格式见 examples） |
 | scripts/dcf.py | 三情景 DCF + 敏感性矩阵（输入格式见 examples） |
+| scripts/selfcheck.py | 安装后/排障自检：离线校验 calc/dcf，在线校验四个采集接口；`--offline` 只跑离线部分 |
+| scripts/endpoints.py | 全部外部接口的 URL/字段/超时集中配置——接口失效只改这一个文件 |
+
+输出约定：采集类脚本默认输出人类可读摘要，`--json` 输出完整机器可读 JSON（collect_f10.py 本身即写 JSON 文件，无开关）。计算类脚本（calc/dcf）默认 markdown 报告，`--json` 输出 JSON。
 
 脚本失败时报错可读；不得因脚本失败改为心算——改走网页采集数据后重试，或标注缺失。搜索/子代理不可用时的替代采集路径见 references/data-sources.md 降级链。

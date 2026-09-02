@@ -52,16 +52,45 @@
 
 ## 降级链（任一环节失败按此切换，不中断）
 
-- 腾讯行情失败 → 东方财富 push2（脚本自动切换）→ WebFetch 东方财富/新浪个股页 → 搜索结果快照
+- 腾讯行情失败 → 东方财富 push2（脚本自动切换）→ 网页抓取东方财富/新浪个股页 → 搜索结果快照
 - F10 页面无法解析 → 直接读巨潮年报 PDF
 - 年报 PDF 过大 → 按目录只读关键章节
 - 某项数据全渠道缺失 → 标注"缺失"，计入完备率
-- **WebSearch/WebFetch/子代理不可用**（如 model admission concurrency limit exceeded）→ 改用无需模型推理的直连通道：
+- **搜索/网页抓取/子代理不可用**（如搜索配额、并发受限）→ 改用无需模型推理的直连通道：
   1. 东方财富 datacenter 接口（财务/估值/分红，纯GET JSON）
   2. 东方财富 emweb `PC_HSF10/{BusinessAnalysis|ShareholderResearch|CompanySurvey}/PageAjax?code=SH600519`（主营构成/十大股东，纯GET JSON）
   3. 巨潮两步定位公告PDF：`POST /new/information/topSearch/query`（公司名→orgId）→ `POST /new/hisAnnouncement/query`（stock=代码,orgId & category=category_ndbg_szsh → 年报/摘要/产销快报PDF链接）
-  4. PDF 用 webReader 类抓取工具解析（年报**摘要**通常5~15页，含审计意见、股东与质押、分红方案、季度拆分，性价比最高；全文PDF过大时优先读摘要）
+  4. PDF 用任意 PDF 文本提取工具解析（pdfplumber/pypdf 或 agent 自带的 PDF 阅读能力均可；年报**摘要**通常5~15页，含审计意见、股东与质押、分红方案、季度拆分，性价比最高；全文PDF过大时优先读摘要）
 - **子代理并发受限** → 串行派发（一次一个），或主线程自做检索；子代理运行超过~10分钟无产出应及早止损改走直连通道
+- **接口疑似失效** → 先跑 `python3 scripts/selfcheck.py` 定位是哪个接口挂了；所有接口 URL 与字段映射集中在 `scripts/endpoints.py`，接口变动只改这一个文件
+
+## 数据 Provider 适配层（可选扩展）
+
+本 skill 默认使用公开免鉴权接口，零配置可用。若你已有付费/官方数据终端（iFinD、Wind、Tushare、akshare 等），可实现 `scripts/providers/provider_interface.md` 定义的四个函数（`get_quote` / `get_financials` / `get_valuation_series` / `get_f10_sections`），保存为 `scripts/providers/active.py` 即生效：采集时优先调用 Provider，Provider 抛异常即视为失败并走内置降级链。模板见 `scripts/providers/template_provider.py`。
+
+## 北交所与港美股 SOP
+
+内置自动脚本仅覆盖沪深 A 股（北交所代码会被脚本明确拒绝）。其他市场按以下路径手动采集，仍须遵守同一套数据硬规则（来源编号、完备率、抽样核对）：
+
+### 北交所（4/8 开头）
+- 公告原文：北交所官网 www.bse.cn 或巨潮资讯网（同 A 股两步定位法）
+- 财务序列：东方财富 F10 网页（f10.eastmoney.com）手动摘录，或年报 PDF 财务报表章节
+- 行情：东方财富/新浪个股页网页快照
+- 注意：北交所公司规模小、披露简略，完备率门槛容易达不到，达不到就如实输出"数据不足"
+
+### 港股（5 位数字）
+- 公告原文：港交所披露易 www1.hkexnews.hk（年报/中期报告 PDF，繁体）
+- 行情与估值：港交所/新浪港股/东方财富港股页网页快照
+- 汇率：港币计价，注明 HKD/CNY 汇率基准日
+- 局限：无自动脚本，PE 历史分位通常不可得（标注缺失）；年报为繁体 PDF
+
+### 美股（字母代码）
+- 法定披露：SEC EDGAR（www.sec.gov）——10-K 年报、10-Q 季报、8-K 重大事项
+- 结构化财务：EDGAR XBRL JSON 接口 `data.sec.gov/api/xbrl/companyfacts/CIK##########.json`（免费、官方、覆盖多年度主要科目，性价比最高）
+- 行情与估值：公开行情页快照（注明来源与访问时间）
+- 局限：中美会计准则差异需在报告中注明；无自动脚本，PE 分位标注缺失
+
+港美股简化版允许缩减模块（行业数据难获取时可只分析公司本身），但一票否决项（审计意见、造假处罚、资不抵债）不可省略。
 
 ## 完备率计算
 
