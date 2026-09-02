@@ -3,7 +3,7 @@
 > 给 AI Agent 用的上市公司基本面深度研究与估值分析技能（A 股为主）。
 > 输入一家公司，产出**标准化、可验证、可复盘**的研究报告：公司概况、行业与同业、商业模式、财务质量、成长性、护城河、治理、估值（DCF + 相对估值 + 历史分位）、多空对照与结论映射。
 
-[![selfcheck](https://github.com/OWNER/equity-research-skill/actions/workflows/selfcheck.yml/badge.svg)](../../actions/workflows/selfcheck.yml)
+[![selfcheck](https://github.com/Lirunyi-123/equity-research-skill/actions/workflows/selfcheck.yml/badge.svg)](https://github.com/Lirunyi-123/equity-research-skill/actions/workflows/selfcheck.yml)
 
 ## 它解决什么问题
 
