@@ -1,0 +1,13 @@
+{
+  "company": "示例酒业（虚构数据，仅供格式参考，禁止当作真实公司引用）",
+  "unit": "亿元",
+  "currency": "CNY",
+  "years": [
+    {"year": 2021, "revenue": 1000.0, "net_profit": 400.0, "deduct_net_profit": 395.0, "gross_margin_percent": 90.0, "operating_cash_flow": 480.0, "capex": 30.0, "total_assets": 2000.0, "total_liabilities": 300.0, "interest_bearing_debt": 10.0, "equity": 1700.0, "goodwill": 20.0},
+    {"year": 2022, "revenue": 1100.0, "net_profit": 450.0, "deduct_net_profit": 445.0, "gross_margin_percent": 90.5, "operating_cash_flow": 530.0, "capex": 35.0, "total_assets": 2150.0, "total_liabilities": 310.0, "interest_bearing_debt": 10.0, "equity": 1840.0, "goodwill": 20.0},
+    {"year": 2023, "revenue": 1180.0, "net_profit": 495.0, "deduct_net_profit": 490.0, "gross_margin_percent": 91.0, "operating_cash_flow": 570.0, "capex": 40.0, "total_assets": 2300.0, "total_liabilities": 320.0, "interest_bearing_debt": 12.0, "equity": 1980.0, "goodwill": 20.0},
+    {"year": 2024, "revenue": 1290.0, "net_profit": 555.0, "deduct_net_profit": 550.0, "gross_margin_percent": 91.2, "operating_cash_flow": 640.0, "capex": 45.0, "total_assets": 2500.0, "total_liabilities": 330.0, "interest_bearing_debt": 12.0, "equity": 2170.0, "goodwill": 20.0},
+    {"year": 2025, "revenue": 1400.0, "net_profit": 620.0, "deduct_net_profit": 615.0, "gross_margin_percent": 91.5, "operating_cash_flow": 700.0, "capex": 50.0, "total_assets": 2750.0, "total_liabilities": 340.0, "interest_bearing_debt": 15.0, "equity": 2410.0, "goodwill": 20.0}
+  ],
+  "market": {"price": 1500.0, "total_shares": 12.0, "total_market_cap": 18000.0, "pe_ttm": 22.0, "pb": 7.5, "dividend_per_share_ttm": 30.0}
+}
